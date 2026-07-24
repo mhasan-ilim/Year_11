@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7D Fitting a Linear Model — Ilim College</title>
+<style>
+  :root{
+    --navy:#1F3864; --navy-light:#2E4C8A; --teal:#2E7D6E; --teal-light:#EAF2EF;
+    --paper:#FBFAF7; --ink:#232323; --line:#D7DCE3; --grey:#6B7280; --amber:#B5762A;
+    --amber-light:#FBF0E4; --ok:#2E7D6E; --bad:#B0413E;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Georgia','Times New Roman',serif; background:var(--paper); color:var(--ink);}
+  .sans{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;}
+  header.top{background:var(--navy); color:#fff; padding:18px 26px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+  header.top .brand{display:flex; align-items:center; gap:12px;}
+  header.top .badge{width:40px;height:40px;border-radius:50%;background:#fff;color:var(--navy);display:flex;align-items:center;justify-content:center;font-weight:700;font-family:sans-serif;font-size:15px;}
+  header.top .badge-logo{height:44px; width:auto; display:block;}
+  .frac{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 5px; line-height:1.15;}
+  .frac .num{border-bottom:1.4px solid currentColor; padding:0 5px 1px; font-size:0.95em;}
+  .frac .den{padding:1px 5px 0; font-size:0.95em;}
+  header.top h1{font-size:19px; margin:0; font-weight:600;}
+  header.top .sub{font-size:12.5px; opacity:0.85; font-family:-apple-system,sans-serif; margin-top:2px;}
+  nav.tabs{display:flex; gap:6px; font-family:-apple-system,sans-serif; font-size:14px;}
+  nav.tabs button{background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.3); color:#fff; padding:8px 16px; border-radius:20px; cursor:pointer; font-weight:600;}
+  nav.tabs button.active{background:#fff; color:var(--navy);}
+  main{max-width:920px; margin:0 auto; padding:24px 20px 80px;}
+  .view{display:none;} .view.active{display:block;}
+
+  .panel{background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px 22px; margin-bottom:20px;}
+  .skill-tag{display:inline-block; background:var(--navy); color:#fff; font-family:-apple-system,sans-serif; font-weight:700; font-size:12px; letter-spacing:0.04em; padding:4px 12px; border-radius:12px; margin-bottom:8px;}
+  .section-score{display:inline-block; font-family:-apple-system,sans-serif; font-weight:700; font-size:12.5px; padding:4px 12px; border-radius:12px; background:#EEE; color:var(--grey);}
+  .section-score.all-correct{background:var(--teal-light); color:var(--teal);}
+  .section-score.some-wrong{background:#FBEAEA; color:var(--bad);}
+  .panel h2{font-size:19px; color:var(--navy); margin:4px 0 10px; border-bottom:2px solid var(--teal-light); padding-bottom:8px;}
+  .panel h3{font-size:15.5px; color:var(--amber); margin:16px 0 6px;}
+  p.q-body{font-size:15px; line-height:1.55; margin:6px 0 12px;}
+  .field-row{display:flex; gap:14px; flex-wrap:wrap; font-family:-apple-system,sans-serif;}
+  .field{display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--grey);}
+  .field input, .field select{font-family:-apple-system,sans-serif; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:14px; min-width:170px;}
+  .hint{background:var(--teal-light); border-left:3px solid var(--teal); padding:9px 13px; font-size:13px; font-style:italic; color:#2b4a43; margin:8px 0 12px; font-family:-apple-system,sans-serif; border-radius:0 6px 6px 0;}
+  .formula-box{background:var(--teal-light); border:1px solid var(--teal); border-radius:8px; padding:14px 18px; margin-bottom:18px; font-family:-apple-system,sans-serif;}
+  .formula-box .title{font-weight:700; color:var(--navy); font-size:15px; margin-bottom:6px;}
+  .formula-box .eq{font-size:15px; margin:4px 0;}
+
+  /* Warm-up MCQ */
+  .warmup{background:#FBF6EE; border:1px dashed var(--amber); border-radius:8px; padding:14px 16px; margin-bottom:16px; font-family:-apple-system,sans-serif;}
+  .warmup .wtitle{font-weight:700; color:var(--amber); font-size:13px; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px;}
+  .mcq{margin-bottom:12px;}
+  .mcq .qtext{font-size:13.5px; font-weight:600; margin-bottom:6px; font-family:Georgia,serif;}
+  .mcq .opts{display:flex; flex-direction:column; gap:4px;}
+  .mcq label{font-size:13px; display:flex; align-items:center; gap:6px; cursor:pointer;}
+  .mcq .fb{font-size:12px; font-weight:700; margin-top:4px;}
+  .mcq .fb.correct{color:var(--ok);} .mcq .fb.incorrect{color:var(--bad);}
+
+  table.data{width:100%; border-collapse:collapse; margin:10px 0; font-family:-apple-system,sans-serif; font-size:13px;}
+  table.data th, table.data td{border:1px solid var(--line); padding:6px 8px; text-align:center;}
+  table.data th{background:#F2F2F2;}
+
+  .scaffold-steps{background:var(--amber-light); border:1px solid var(--amber); border-radius:8px; padding:14px 18px; margin:10px 0; font-family:-apple-system,sans-serif;}
+  .scaffold-steps .step{font-size:14px; margin-bottom:8px;}
+  .scaffold-steps .step b{color:var(--amber);}
+
+  .ans-row{display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; margin:10px 0; font-family:-apple-system,sans-serif;}
+  .ans-row .field label{font-weight:600; color:var(--navy);}
+  .fb-line{font-size:12.5px; font-weight:600; margin-top:4px; font-family:-apple-system,sans-serif;}
+  .fb-line.correct{color:var(--ok);} .fb-line.incorrect{color:var(--bad);}
+
+  .canvas-wrap{border:1px solid var(--line); border-radius:8px; padding:12px; margin:14px 0; background:#fcfcfb;}
+  canvas{display:block; margin:0 auto; touch-action:none; cursor:crosshair;}
+  .canvas-controls{display:flex; gap:8px; justify-content:center; margin-top:10px; font-family:-apple-system,sans-serif;}
+  .canvas-controls button{background:#fff; border:1px solid var(--line); border-radius:6px; padding:6px 12px; font-size:12.5px; cursor:pointer; color:var(--navy); font-weight:600;}
+  .canvas-controls button:hover{background:var(--teal-light);}
+  .point-readout{font-size:13px; text-align:center; margin-top:8px; font-family:-apple-system,sans-serif; color:var(--navy);}
+  .slope-calc{background:var(--teal-light); border-radius:6px; padding:10px 14px; margin-top:8px; font-family:-apple-system,sans-serif; font-size:13.5px; text-align:center; display:none;}
+
+  .submit-bar{position:sticky; bottom:0; background:#fff; border-top:1px solid var(--line); padding:14px 20px; margin:0 -20px; display:flex; align-items:center; justify-content:space-between; gap:12px; font-family:-apple-system,sans-serif; flex-wrap:wrap;}
+  .submit-bar .status{font-size:13px; color:var(--grey);}
+  .btn-primary{background:var(--navy); color:#fff; border:none; padding:11px 26px; border-radius:24px; font-size:14.5px; font-weight:700; cursor:pointer; font-family:-apple-system,sans-serif;}
+  .btn-primary:hover{background:var(--navy-light);}
+  .btn-secondary{background:#fff; color:var(--navy); border:1px solid var(--navy); padding:10px 20px; border-radius:24px; font-size:13.5px; font-weight:700; cursor:pointer; font-family:-apple-system,sans-serif;}
+
+  .dash-controls{display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:16px; font-family:-apple-system,sans-serif;}
+  .dash-controls select, .dash-controls input{padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:13.5px;}
+  table.dash{width:100%; border-collapse:collapse; font-family:-apple-system,sans-serif; font-size:13.5px;}
+  table.dash th{background:var(--navy); color:#fff; padding:9px 10px; text-align:left;}
+  table.dash td{border-bottom:1px solid var(--line); padding:9px 10px;}
+  table.dash tr:hover{background:var(--teal-light);}
+  .score-pill{display:inline-block; padding:2px 10px; border-radius:12px; font-size:12px; font-weight:700; background:var(--teal-light); color:var(--teal);}
+  .view-btn{background:none; border:1px solid var(--navy); color:var(--navy); border-radius:14px; padding:4px 12px; font-size:12px; cursor:pointer; font-weight:600;}
+  .modal-bg{display:none; position:fixed; inset:0; background:rgba(20,25,35,0.55); z-index:50; align-items:center; justify-content:center; padding:20px;}
+  .modal-bg.active{display:flex;}
+  .modal{background:#fff; border-radius:10px; max-width:700px; width:100%; max-height:85vh; overflow-y:auto; padding:22px 26px; font-family:-apple-system,sans-serif;}
+  .modal h3{color:var(--navy); margin-top:0;}
+  .modal .close-x{float:right; background:none; border:none; font-size:20px; cursor:pointer; color:var(--grey);}
+  .modal-section{margin-bottom:14px;}
+  .modal-section h4{font-size:13px; text-transform:uppercase; letter-spacing:0.04em; color:var(--teal); margin-bottom:6px;}
+  .modal-section .row{font-size:13.5px; margin-bottom:4px;}
+  .empty-state{text-align:center; color:var(--grey); padding:40px 10px; font-family:-apple-system,sans-serif;}
+  footer.note{max-width:920px; margin:0 auto; padding:0 20px 40px; font-size:11.5px; color:var(--grey); font-family:-apple-system,sans-serif;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="badge">IC</div>
+    <div><h1>7D Fitting a Linear Model</h1><div class="sub">Year 11 Mathematics · Ilim College</div></div>
+  </div>
+  <nav class="tabs">
+    <button id="tabStudentBtn" class="active">Student</button>
+    <button id="tabTeacherBtn">Teacher Dashboard</button>
+  </nav>
+</header>
+
+<main>
+  <div id="studentView" class="view active">
+
+    <div class="panel">
+      <h2>Your details</h2>
+      <div class="field-row">
+        <div class="field"><label>Full name</label><input type="text" id="stuName" placeholder="e.g. Yusuf Rahman"></div>
+        <div class="field"><label>Class</label><input type="text" id="stuClass" placeholder="e.g. 11 Methods"></div>
+        <div class="field"><label>&nbsp;</label><button class="btn-secondary" id="loadBtn" type="button">Load my saved answers</button></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="formula-box">
+        <div class="title">Key formulas</div>
+        <div class="eq">Equation of the least squares line: <b>y = a + bx</b></div>
+        <div class="eq" style="font-style:italic; display:flex; align-items:center; gap:22px; flex-wrap:wrap;">
+          <span>slope&nbsp; b = <span class="frac"><span class="num">r · sy</span><span class="den">sx</span></span></span>
+          <span>intercept&nbsp; a = ȳ − b · x̄</span>
+        </div>
+      </div>
+      <h2 style="border:none; margin-top:0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <span>Warm-up: linear or non-linear?</span>
+        <span class="section-score" id="gw_scorebadge">Not yet checked</span>
+      </h2>
+      <p class="q-body">Before we start, let's check you can spot the difference.</p>
+      <div id="generalWarmup"></div>
+    </div>
+
+    <div id="skillsContainer"></div>
+
+  </div>
+
+  <div id="teacherView" class="view">
+    <div class="panel">
+      <h2>Class submissions</h2>
+      <div class="dash-controls">
+        <select id="filterClass"><option value="">All classes</option></select>
+        <input type="text" id="filterName" placeholder="Search by name…">
+        <button class="btn-secondary" id="refreshBtn" type="button">Refresh</button>
+        <button class="btn-secondary" id="exportBtn" type="button">Export CSV</button>
+      </div>
+      <div id="dashTableWrap"></div>
+    </div>
+  </div>
+</main>
+
+<div class="submit-bar" id="submitBar">
+  <div class="status" id="submitStatus">Not yet submitted.</div>
+  <div style="display:flex; gap:10px;">
+    <button class="btn-secondary" id="checkBtn" type="button">Check my answers</button>
+    <button class="btn-secondary" id="saveDraftBtn" type="button">Save draft</button>
+    <button class="btn-primary" id="submitBtn" type="button">Submit</button>
+  </div>
+</div>
+
+<footer class="note">Ilim College · Year 11 Mathematics · Answers are saved for your teacher when you press Submit.</footer>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal"><button class="close-x" id="modalClose">✕</button><div id="modalContent"></div></div>
+</div>
+
+<script>
+/* ======================= GENERIC ANSWER-KEY / GRADING SYSTEM ======================= */
+const ANSWER_KEY = {};   // id -> {type:'numeric'|'mcq', correct, tolerance, skill}
+const LINE_CLICKS = {};  // graphId -> [{x,y},...]
+
+function registerNumeric(id, correct, tolerance, skill) {
+  ANSWER_KEY[id] = { type: "numeric", correct, tolerance, skill };
+}
+function registerMCQ(id, correctIndex, skill) {
+  ANSWER_KEY[id] = { type: "mcq", correct: correctIndex, skill };
+}
+
+function el(tag, attrs = {}, children = []) {
+  const e = document.createElement(tag);
+  Object.entries(attrs).forEach(([k, v]) => {
+    if (k === "class") e.className = v;
+    else if (k === "html") e.innerHTML = v;
+    else e.setAttribute(k, v);
+  });
+  children.forEach((c) => e.appendChild(c));
+  return e;
+}
+function text(str) { return document.createTextNode(str); }
+
+function numField(id, labelText, correct, tolerance, width, skill) {
+  const wrap = el("div", { class: "field" });
+  wrap.appendChild(el("label", { html: labelText }));
+  const input = el("input", { type: "text", id });
+  if (width) input.style.maxWidth = width;
+  wrap.appendChild(input);
+  const fb = el("div", { class: "fb-line", id: id + "_fb" });
+  wrap.appendChild(fb);
+  registerNumeric(id, correct, tolerance, skill);
+  return wrap;
+}
+
+function mcqBlock(container, keyPrefix, questions, skill) {
+  const box = el("div", { class: "warmup" });
+  box.appendChild(el("div", { class: "wtitle" }, [text("Warm-up")]));
+  questions.forEach((q, i) => {
+    const id = keyPrefix + "_" + i;
+    registerMCQ(id, q.correct, skill);
+    const qDiv = el("div", { class: "mcq" });
+    qDiv.appendChild(el("div", { class: "qtext" }, [text((i + 1) + ". " + q.q)]));
+    const opts = el("div", { class: "opts" });
+    q.options.forEach((opt, oi) => {
+      const label = el("label", {});
+      const radio = el("input", { type: "radio", name: id, value: oi });
+      label.appendChild(radio);
+      label.appendChild(text(opt));
+      opts.appendChild(label);
+    });
+    qDiv.appendChild(opts);
+    qDiv.appendChild(el("div", { class: "fb", id: id + "_fb" }));
+    box.appendChild(qDiv);
+  });
+  container.appendChild(box);
+}
+
+function scoreBadge(skillId) {
+  return el("span", { class: "section-score", id: skillId + "_scorebadge" }, [text("Not yet checked")]);
+}
+
+/* ======================= DATA ======================= */
+
+const GENERAL_WARMUP = [
+  { q: "Which equation represents a LINEAR relationship?", options: ["y = 3x + 2", "y = x² + 1", "y = 2ˣ", "y = 1/x"], correct: 0 },
+  { q: "A scatterplot with points curving upward like a parabola shows a ______ relationship.", options: ["linear", "non-linear", "no", "negative"], correct: 1 },
+  { q: "Which of these is a straight-line equation?", options: ["y = 5 − 2x", "y = x³", "y = √x", "y = 10/x"], correct: 0 },
+  { q: "If a scatterplot's points curve, what might help straighten it before fitting a line?", options: ["Doing nothing", "Squaring one of the variables", "Deleting all the points", "Swapping EV and RV"], correct: 1 },
+];
+
+const SKILL_WARMUPS = {
+  s1: [
+    { q: "Which conditions are needed before fitting a least squares line?", options: ["Numerical data & a linear association", "At least 50 data points", "Positive correlation only", "No gridlines on the plot"], correct: 0 },
+    { q: "A scatterplot with a clear U-shape is best described as...", options: ["Strong linear", "Non-linear", "No association", "Perfectly linear"], correct: 1 },
+  ],
+  s2: [
+    { q: "In y = a + bx, 'a' represents the...", options: ["slope", "y-intercept", "correlation coefficient", "x-intercept"], correct: 1 },
+    { q: "In y = a + bx, 'b' represents the...", options: ["y-intercept", "slope", "mean of y", "residual"], correct: 1 },
+    { q: "A line passes through (2, 5) and (4, 9). Its slope is...", options: ["1", "2", "4", "9"], correct: 1 },
+  ],
+  s3: [
+    { q: "On a CAS, which variable should be entered as the x-list?", options: ["The response variable", "The explanatory variable", "Either one — it doesn't matter", "The variable with bigger numbers"], correct: 1 },
+    { q: "A CAS regression gives a = 1.39, b = 0.417. The equation is...", options: ["y = 0.417 + 1.39x", "y = 1.39 + 0.417x", "y = 1.39 × 0.417x", "y = 0.417x² + 1.39"], correct: 1 },
+  ],
+  s4: [
+    { q: "Which formula gives the slope of the least squares line?", options: ["b = r · sx / sy", "b = r · sy / sx", "b = sy / sx", "b = r / (sx · sy)"], correct: 1 },
+    { q: "Which formula gives the intercept?", options: ["a = ȳ + b · x̄", "a = ȳ − b · x̄", "a = x̄ − b · ȳ", "a = r · ȳ"], correct: 1 },
+  ],
+  s5: [
+    { q: "The explanatory variable (EV) should be the variable that...", options: ["You want to predict", "Might explain or predict the other", "Has the bigger numbers", "Comes first in the table"], correct: 1 },
+    { q: "A correlation coefficient close to 1 indicates a...", options: ["Weak association", "Strong positive association", "Strong negative association", "No association"], correct: 1 },
+  ],
+  s6: [
+    { q: "Rearranging b = r · sy / sx to make r the subject gives...", options: ["r = b · sy / sx", "r = b · sx / sy", "r = b / (sx · sy)", "r = sy / (b · sx)"], correct: 1 },
+  ],
+  s7: [
+    { q: "A curved (parabola-shaped) scatterplot might be straightened by...", options: ["Taking √y", "Squaring x", "Taking the log of x", "Nothing needs to change"], correct: 1 },
+    { q: "The area of a circle relates to its diameter by...", options: ["Area = π × diameter", "Area = π × diameter²", "Area = (π/4) × diameter²", "Area = 2π × diameter"], correct: 2 },
+  ],
+};
+
+// Skill 2 line-graph configs
+const LINE_GRAPHS = [
+  {
+    id: "lg_scaffold", context: "Taxi fare ($) vs distance travelled (km).",
+    xLabel: "Distance (km)", yLabel: "Fare ($)", xMin: 0, xMax: 10, xStep: 1, yMin: 0, yMax: 30, yStep: 5,
+    aTrue: 5, bTrue: 2, points: [[1,9.2],[2,8.4],[3,11],[4,13.5],[5,14],[6,17],[7,19],[8,18.7],[9,24.4]],
+    scaffold: true,
+  },
+  {
+    id: "lg_practice1", context: "Plant height (cm) vs number of weeks growing.",
+    xLabel: "Weeks growing", yLabel: "Height (cm)", xMin: 0, xMax: 8, xStep: 1, yMin: 0, yMax: 45, yStep: 5,
+    aTrue: 10, bTrue: 4, points: [[1,15],[2,17],[3,22],[4,27],[5,29],[6,35],[7,37]],
+  },
+  {
+    id: "lg_practice2", context: "Battery charge (%) vs hours of use.",
+    xLabel: "Hours of use", yLabel: "Battery charge (%)", xMin: 0, xMax: 10, xStep: 1, yMin: 0, yMax: 100, yStep: 20,
+    aTrue: 100, bTrue: -8, points: [[1,93],[2,84],[3,76],[4,71],[5,60],[6,53],[7,45],[8,38],[9,29]],
+  },
+  {
+    id: "lg_offset_scaffold", context: "Hire cost ($) vs number of guests. Notice the horizontal axis does NOT start at 0.",
+    xLabel: "Number of guests", yLabel: "Hire cost ($)", xMin: 10, xMax: 30, xStep: 2, yMin: 20, yMax: 110, yStep: 10,
+    aTrue: 10, bTrue: 3, points: [[12,47],[14,52],[16,58],[18,65],[20,71],[22,75],[24,83],[26,88],[28,95]],
+    offsetAxis: true, scaffold: true,
+  },
+  {
+    id: "lg_offset_practice", context: "Delivery cost ($) vs distance (km). Again, the horizontal axis does NOT start at 0.",
+    xLabel: "Distance (km)", yLabel: "Delivery cost ($)", xMin: 15, xMax: 32, xStep: 5, yMin: 55, yMax: 105, yStep: 5,
+    aTrue: 20, bTrue: 2.5, points: [[16,60],[18,65],[20,71],[22,74],[24,80],[26,86],[28,90],[30,96]],
+    offsetAxis: true,
+  },
+];
+
+// Skill 3 data
+const S3_INCOME = { x: [8.9,23.0,7.5,8.0,18.0,16.7,5.2,12.8,19.1,16.4,21.7], y: [7.5,12.0,6.0,1.8,7.7,5.7,3.8,5.7,11.0,9.7,9.9] };
+const S3_TEST = { x: [33,45,27,42,50,38,17,35,29], y: [43,46,36,34,48,34,29,41,28] };
+
+// Skill 5 data
+const S5_AGE = { x: [36,40,44,52,56,60], y: [84,87,90,92,94,96] };
+const S5_WEIGHT = { x: [82.1,70.1,76.6,82.1,83.9,73.2,66.0,77.5], y: [101,89,98,100,108,104,94,89] };
+const S5_HEIGHT = { x: [162,170,164,153,171,166,170,163], y: [163,168,165,154,165,164,170,165] };
+
+// Skill 7 data
+const S7_DATA = { d: [3.5,6.2,5.4,3.7,7.3,8.6,3.7,2.9,2.1,9.7,3.7], a: [9.5,30.0,22.7,10.2,42.6,57.7,10.5,5.7,2.7,74.4,11.0] };
+
+/* ======================= DATA TABLE BUILDER ======================= */
+function dataTableEl(headerLabel, xVals, yLabel, yVals) {
+  const table = el("table", { class: "data" });
+  const tr1 = el("tr", {}, [el("th", {}, [text(headerLabel)]), ...xVals.map(v => el("td", {}, [text(v)]))]);
+  const tr2 = el("tr", {}, [el("th", {}, [text(yLabel)]), ...yVals.map(v => el("td", {}, [text(v)]))]);
+  table.appendChild(tr1); table.appendChild(tr2);
+  return table;
+}
+
+/* ======================= LINE GRAPH CANVAS ======================= */
+const PAD = { l: 58, r: 20, t: 20, b: 46 };
+
+function toPixel(cfg, x, y, w, h) {
+  const px = PAD.l + ((x - cfg.xMin) / (cfg.xMax - cfg.xMin)) * (w - PAD.l - PAD.r);
+  const py = h - PAD.b - ((y - cfg.yMin) / (cfg.yMax - cfg.yMin)) * (h - PAD.t - PAD.b);
+  return [px, py];
+}
+function toDataX(cfg, px, w) {
+  return cfg.xMin + ((px - PAD.l) / (w - PAD.l - PAD.r)) * (cfg.xMax - cfg.xMin);
+}
+
+function drawLineGraph(cfg) {
+  const canvas = document.getElementById(cfg.id + "_canvas");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.strokeStyle = "#DCE3EA"; ctx.lineWidth = 1; ctx.font = "11px -apple-system, sans-serif"; ctx.fillStyle = "#6B7280";
+  for (let x = cfg.xMin; x <= cfg.xMax + 1e-9; x += cfg.xStep) {
+    const [px] = toPixel(cfg, x, cfg.yMin, w, h);
+    ctx.beginPath(); ctx.moveTo(px, PAD.t); ctx.lineTo(px, h - PAD.b); ctx.stroke();
+    ctx.textAlign = "center"; ctx.fillText(Math.round(x * 10) / 10, px, h - PAD.b + 16);
+  }
+  for (let y = cfg.yMin; y <= cfg.yMax + 1e-9; y += cfg.yStep) {
+    const [, py] = toPixel(cfg, cfg.xMin, y, w, h);
+    ctx.beginPath(); ctx.moveTo(PAD.l, py); ctx.lineTo(w - PAD.r, py); ctx.stroke();
+    ctx.textAlign = "right"; ctx.fillText(Math.round(y), PAD.l - 8, py + 4);
+  }
+  ctx.strokeStyle = "#7A8AA0"; ctx.lineWidth = 1.4;
+  ctx.strokeRect(PAD.l, PAD.t, w - PAD.l - PAD.r, h - PAD.t - PAD.b);
+
+  ctx.fillStyle = "#1F3864"; ctx.font = "italic 12.5px Georgia, serif"; ctx.textAlign = "center";
+  ctx.fillText(cfg.xLabel, PAD.l + (w - PAD.l - PAD.r) / 2, h - 8);
+  ctx.save(); ctx.translate(16, PAD.t + (h - PAD.t - PAD.b) / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText(cfg.yLabel, 0, 0); ctx.restore();
+
+  // scatter points (light, for context)
+  ctx.fillStyle = "#9AA5B1";
+  cfg.points.forEach(([px0, py0]) => {
+    const [px, py] = toPixel(cfg, px0, py0, w, h);
+    ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI * 2); ctx.fill();
+  });
+
+  // the fitted line
+  ctx.strokeStyle = "#b8342a"; ctx.lineWidth = 2.2;
+  const [x1p, y1p] = toPixel(cfg, cfg.xMin, cfg.aTrue + cfg.bTrue * cfg.xMin, w, h);
+  const [x2p, y2p] = toPixel(cfg, cfg.xMax, cfg.aTrue + cfg.bTrue * cfg.xMax, w, h);
+  ctx.beginPath(); ctx.moveTo(x1p, y1p); ctx.lineTo(x2p, y2p); ctx.stroke();
+
+  // clicked points
+  const clicks = LINE_CLICKS[cfg.id] || [];
+  ctx.fillStyle = "#1F3864";
+  clicks.forEach((pt, i) => {
+    const [px, py] = toPixel(cfg, pt.x, pt.y, w, h);
+    ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.font = "bold 11px -apple-system"; ctx.textAlign = "center";
+    ctx.fillText(i + 1, px, py + 4);
+    ctx.fillStyle = "#1F3864";
+  });
+  if (clicks.length === 2) {
+    const [p1x, p1y] = toPixel(cfg, clicks[0].x, clicks[0].y, w, h);
+    const [p2x, p2y] = toPixel(cfg, clicks[1].x, clicks[1].y, w, h);
+    ctx.strokeStyle = "#2E7D6E"; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(p1x, p1y); ctx.lineTo(p2x, p1y); ctx.lineTo(p2x, p2y); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  document.getElementById(cfg.id + "_readout").textContent =
+    clicks.length === 0 ? "Click two points on the red line." :
+    clicks.length === 1 ? `Point 1: (${clicks[0].x}, ${round1(clicks[0].y)}). Click one more point.` :
+    `Point 1: (${clicks[0].x}, ${round1(clicks[0].y)})   Point 2: (${clicks[1].x}, ${round1(clicks[1].y)})`;
+
+  const calcBox = document.getElementById(cfg.id + "_calc");
+  if (clicks.length === 2) {
+    const rise = clicks[1].y - clicks[0].y;
+    const run = clicks[1].x - clicks[0].x;
+    const slope = rise / run;
+    calcBox.style.display = "block";
+    calcBox.innerHTML = `slope = ${fracHTML("rise", "run")} = ${fracHTML("y₂ − y₁", "x₂ − x₁")} = ${fracHTML(round1(rise), round1(run))} = <b>${round2(slope)}</b>`;
+    document.getElementById(cfg.id + "_slope").value = round2(slope);
+  } else {
+    calcBox.style.display = "none";
+  }
+}
+function round1(v) { return Math.round(v * 10) / 10; }
+function round2(v) { return Math.round(v * 100) / 100; }
+function fracHTML(num, den) {
+  return `<span class="frac"><span class="num">${num}</span><span class="den">${den}</span></span>`;
+}
+
+function setupLineGraph(cfg) {
+  LINE_CLICKS[cfg.id] = LINE_CLICKS[cfg.id] || [];
+  const canvas = document.getElementById(cfg.id + "_canvas");
+  drawLineGraph(cfg);
+  canvas.addEventListener("click", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const px = (e.clientX - rect.left) * scaleX;
+    if (px < PAD.l || px > canvas.width - PAD.r) return;
+    let x = toDataX(cfg, px, canvas.width);
+    x = Math.round(x / (cfg.xStep / 2)) * (cfg.xStep / 2);
+    x = Math.max(cfg.xMin, Math.min(cfg.xMax, x));
+    const y = cfg.aTrue + cfg.bTrue * x;
+    const clicks = LINE_CLICKS[cfg.id];
+    if (clicks.length >= 2) clicks.length = 0;
+    clicks.push({ x: round1(x), y: round1(y) });
+    drawLineGraph(cfg);
+  });
+  document.getElementById(cfg.id + "_clear").addEventListener("click", () => {
+    LINE_CLICKS[cfg.id] = [];
+    drawLineGraph(cfg);
+  });
+}
+
+/* ======================= BUILD SKILL PANELS ======================= */
+function buildSkill1(container) {
+  const p = el("div", { class: "panel" });
+  const s1Header = el("div", { style: "display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;" });
+  s1Header.appendChild(el("div", { class: "skill-tag" }, [text("SKILL 1")]));
+  s1Header.appendChild(scoreBadge("s1"));
+  p.appendChild(s1Header);
+  p.appendChild(el("h2", {}, [text("Is a least squares line appropriate?")]));
+  mcqBlock(p, "s1", SKILL_WARMUPS.s1, "s1");
+  p.appendChild(el("p", { class: "q-body" }, [text("A least squares line should only be fitted when the association looks linear, with no extreme outliers.")]));
+
+  ["plot1", "plot2"].forEach((pid, i) => {
+    const title = i === 0 ? "Plot 1 — roughly linear pattern" : "Plot 2 — curved pattern";
+    const box = el("div", { class: "canvas-wrap" });
+    box.appendChild(el("h3", {}, [text(title)]));
+    const canvas = el("canvas", { id: pid + "_canvas", width: "420", height: "260" });
+    box.appendChild(canvas);
+    p.appendChild(box);
+
+    const row = el("div", { class: "ans-row" });
+    const f1 = el("div", { class: "field" });
+    f1.appendChild(el("label", {}, [text("Appropriate to fit a least squares line?")]));
+    const sel = el("select", { id: pid + "_yn" });
+    sel.appendChild(el("option", { value: "" }, [text("Choose…")]));
+    sel.appendChild(el("option", { value: "Y" }, [text("Yes")]));
+    sel.appendChild(el("option", { value: "N" }, [text("No")]));
+    f1.appendChild(sel);
+    row.appendChild(f1);
+    p.appendChild(row);
+    registerMCQ(pid + "_yn", i === 0 ? "Y" : "N");
+    ANSWER_KEY[pid + "_yn"] = { type: "select", correct: i === 0 ? "Y" : "N", skill: "s1" };
+    const fb = el("div", { class: "fb-line", id: pid + "_yn_fb" });
+    p.appendChild(fb);
+  });
+
+  container.appendChild(p);
+
+  const PTS_LINEAR = [[1,5],[2,7],[3,8.5],[4,11],[5,12],[6,14.5],[7,16],[8,17.5],[9,19]];
+  const PTS_CURVED = [[1,18],[2,11],[3,7],[4,5],[5,4.5],[6,5],[7,8],[8,12],[9,19]];
+  drawMiniScatter("plot1_canvas", PTS_LINEAR, 0, 10, 0, 22, "x", "y");
+  drawMiniScatter("plot2_canvas", PTS_CURVED, 0, 10, 0, 22, "x", "y");
+}
+
+function drawMiniScatter(canvasId, points, xMin, xMax, yMin, yMax, xLabel, yLabel) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  const pad = { l: 40, r: 15, t: 15, b: 34 };
+  ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = "#DCE3EA"; ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const px = pad.l + (i / 5) * (w - pad.l - pad.r);
+    ctx.beginPath(); ctx.moveTo(px, pad.t); ctx.lineTo(px, h - pad.b); ctx.stroke();
+    const py = h - pad.b - (i / 5) * (h - pad.t - pad.b);
+    ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(w - pad.r, py); ctx.stroke();
+  }
+  ctx.strokeStyle = "#7A8AA0"; ctx.lineWidth = 1.2;
+  ctx.strokeRect(pad.l, pad.t, w - pad.l - pad.r, h - pad.t - pad.b);
+  ctx.fillStyle = "#1F3864";
+  points.forEach(([x0, y0]) => {
+    const px = pad.l + ((x0 - xMin) / (xMax - xMin)) * (w - pad.l - pad.r);
+    const py = h - pad.b - ((y0 - yMin) / (yMax - yMin)) * (h - pad.t - pad.b);
+    ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.fill();
+  });
+}
+
+function buildSkill2(container) {
+  const p = el("div", { class: "panel" });
+  const s2Header = el("div", { style: "display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;" });
+  s2Header.appendChild(el("div", { class: "skill-tag" }, [text("SKILL 2")]));
+  s2Header.appendChild(scoreBadge("s2"));
+  p.appendChild(s2Header);
+  p.appendChild(el("h2", {}, [text("Reading the equation of a fitted line from a scatterplot")]));
+  mcqBlock(p, "s2", SKILL_WARMUPS.s2, "s2");
+  p.appendChild(el("p", { class: "q-body" }, [text("Click two points on the red line (not the grey dots). The slope will be calculated automatically from the coordinates you chose.")]));
+  container.appendChild(p);
+
+  LINE_GRAPHS.forEach((cfg) => {
+    const box = el("div", { class: "panel" });
+    box.appendChild(el("h3", {}, [text((cfg.scaffold ? "Scaffolded: " : "Now you try: ") + cfg.context)]));
+    if (cfg.offsetAxis) box.appendChild(el("div", { class: "hint" }, [text("The axis doesn't start at 0 here — after finding the slope, substitute one point into y = a + bx to calculate the intercept.")]));
+    const cw = el("div", { class: "canvas-wrap" });
+    cw.appendChild(el("canvas", { id: cfg.id + "_canvas", width: "560", height: "340" }));
+    cw.appendChild(el("div", { class: "point-readout", id: cfg.id + "_readout" }));
+    cw.appendChild(el("div", { class: "slope-calc", id: cfg.id + "_calc" }));
+    const ctrl = el("div", { class: "canvas-controls" });
+    const clearBtn = el("button", { type: "button", id: cfg.id + "_clear" }, [text("Clear points")]);
+    ctrl.appendChild(clearBtn);
+    cw.appendChild(ctrl);
+    box.appendChild(cw);
+
+    const row = el("div", { class: "ans-row" });
+    row.appendChild(numField(cfg.id + "_slope", "b (slope, from your two points)", cfg.bTrue, Math.max(0.05, Math.abs(cfg.bTrue) * 0.1), "140px", "s2"));
+    row.appendChild(numField(cfg.id + "_a", "a (intercept)", cfg.aTrue, Math.max(0.5, Math.abs(cfg.aTrue) * 0.08), "140px", "s2"));
+    box.appendChild(row);
+    box.appendChild(numField(cfg.id + "_eq", "Equation (" + cfg.yLabel + " = a + b × " + cfg.xLabel + ")", null, null, "100%", "s2"));
+    delete ANSWER_KEY[cfg.id + "_eq"]; // equation text not auto-graded, just recorded
+
+    container.appendChild(box);
+  });
+}
+
+function buildSkill3(container) {
+  const p = el("div", { class: "panel" });
+  const s3Header = el("div", { style: "display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;" });
+  s3Header.appendChild(el("div", { class: "skill-tag" }, [text("SKILL 3")]));
+  s3Header.appendChild(scoreBadge("s3"));
+  p.appendChild(s3Header);
+  p.appendChild(el("h2", {}, [text("Finding the equation from raw data (using CAS)")]));
+  mcqBlock(p, "s3", SKILL_WARMUPS.s3, "s3");
+
+  p.appendChild(el("h3", {}, [text("Scaffolded: per capita income ($'000) vs CO2 emissions (tonnes) for 11 countries")]));
+  p.appendChild(dataTableEl("income", S3_INCOME.x, "CO2", S3_INCOME.y));
+  const steps = el("div", { class: "scaffold-steps" });
+  ["EV = income, RV = CO2. Enter the data into two CAS lists.", "Run linear regression (a + bx).", "Read off a and b (3 sig. figs)."].forEach((s, i) => {
+    steps.appendChild(el("div", { class: "step" }, [el("b", {}, [text("Step " + (i + 1) + ": ")]), text(s)]));
+  });
+  p.appendChild(steps);
+  let row = el("div", { class: "ans-row" });
+  row.appendChild(numField("s3_scaffold_a", "a =", 1.39, 0.05, "120px", "s3"));
+  row.appendChild(numField("s3_scaffold_b", "b =", 0.417, 0.02, "120px", "s3"));
+  p.appendChild(row);
+
+  p.appendChild(el("h3", {}, [text("Now try a new data set — Test 1 vs Test 2 scores for nine students (Test 1 as the EV)")]));
+  p.appendChild(dataTableEl("Test 1", S3_TEST.x, "Test 2", S3_TEST.y));
+  row = el("div", { class: "ans-row" });
+  row.appendChild(numField("s3_test_a", "a =", 19.6, 0.5, "120px", "s3"));
+  row.appendChild(numField("s3_test_b", "b =", 0.516, 0.03, "120px", "s3"));
+  p.appendChild(row);
+
+  container.appendChild(p);
+}
+
+function buildSkill4(container) {
+  const p = el("div", { class: "panel" });
+  const s4Header = el("div", { style: "display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;" });
+  s4Header.appendChild(el("div", { class: "skill-tag" }, [text("SKILL 4")]));
+  s4Header.appendChild(scoreBadge("s4"));
+  p.appendChild(s4Header);
+  p.appendChild(el("h2", {}, [text("Using the formulas directly")]));
+  mcqBlock(p, "s4", SKILL_WARMUPS.s4, "s4");
+
+  p.appendChild(el("h3", {}, [text("Scaffolded")]));
+  p.appendChild(el("p", { class: "q-body", html: "Find the equation of the least squares line, y = a + bx, when:<br><i>r = 0.8&nbsp;&nbsp;&nbsp;sx = 6.8&nbsp;&nbsp;&nbsp;sy = 20.5&nbsp;&nbsp;&nbsp;x̄ = 115.0&nbsp;&nbsp;&nbsp;ȳ = 123.5</i>" }));
+  let row = el("div", { class: "ans-row" });
+  row.appendChild(numField("s4_scaffold_b", "b =", 2.41, 0.05, "120px", "s4"));
+  row.appendChild(numField("s4_scaffold_a", "a =", -153.85, 1, "140px", "s4"));
+  p.appendChild(row);
+
+  p.appendChild(el("h3", {}, [text("Now you try")]));
+  p.appendChild(el("p", { class: "q-body", html: "Find the equation of the least squares line, y = a + bx, when:<br><i>r = −0.600&nbsp;&nbsp;&nbsp;sx = 2.50&nbsp;&nbsp;&nbsp;sy = 1.70&nbsp;&nbsp;&nbsp;x̄ = 18.0&nbsp;&nbsp;&nbsp;ȳ = 15.7</i>" }));
+  row = el("div", { class: "ans-row" });
+  row.appendChild(numField("s4_try_b", "b =", -0.408, 0.02, "120px", "s4"));
+  row.appendChild(numField("s4_try_a", "a =", 23.0, 0.3, "120px", "s4"));
+  p.appendChild(row);
+
+  container.appendChild(p);
+}
+
+function buildSkill5(container) {
+  const p = el("div", { class: "panel" });
+  const s5Header = el("div", { style: "display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;" });
+  s5Header.appendChild(el("div", { class: "skill-tag" }, [text("SKILL 5")]));
+  s5Header.appendChild(scoreBadge("s5"));
+  p.appendChild(s5Header);
+  p.appendChild(el("h2", {}, [text("Full analysis: scatterplot, equation and correlation")]));
+  mcqBlock(p, "s5", SKILL_WARMUPS.s5, "s5");
+
+  p.appendChild(el("h3", {}, [text("Scaffolded: age (months) vs height (cm) of six children")]));
+  p.appendChild(dataTableEl("Age", S5_AGE.x, "Height", S5_AGE.y));
+  let row = el("div", { class: "ans-row" });
+  row.appendChild(numField("s5_age_a", "a =", 68.2, 1, "110px", "s5"));
+  row.appendChild(numField("s5_age_b", "b =", 0.464, 0.03, "110px", "s5"));
+  row.appendChild(numField("s5_age_r", "r =", 0.985, 0.02, "110px", "s5"));
+  p.appendChild(row);
+
+  p.appendChild(el("h3", {}, [text("Now you try: weight (kg) vs blood glucose (mg/100mL) of eight adults")]));
+  p.appendChild(dataTableEl("Weight", S5_WEIGHT.x, "Glucose", S5_WEIGHT.y));
+  row = el("div", { class: "ans-row" });
+  row.appendChild(numField("s5_wt_a", "a =", 50.8, 2, "110px", "s5"));
+  row.appendChild(numField("s5_wt_b", "b =", 0.616, 0.05, "110px", "s5"));
+  row.appendChild(numField("s5_wt_r", "r =", 0.570, 0.04, "110px", "s5"));
+  p.appendChild(row);
+
+  p.appendChild(el("h3", {}, [text("Now you try: height vs arm span (cm) of eight people")]));
+  p.appendChild(dataTableEl("Height", S5_HEIGHT.x, "Arm span", S5_HEIGHT.y));
+  row = el("div", { class: "ans-row" });
+  row.appendChild(numField("s5_arm_a", "a =", 45.6, 3, "110px", "s5"));
+  row.appendChild(numField("s5_arm_b", "b =", 0.720, 0.05, "110px", "s5"));
+  row.appendChild(numField("s5_arm_r", "r =", 0.903, 0.03, "110px", "s5"));
+  p.appendChild(row);
+
+  container.appendChild(p);
+}
+
+function buildSkill6(container) {
+  const p = el("div", { class: "panel" });
+  const s6Header = el("div", { style: "display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;" });
+  s6Header.appendChild(el("div", { class: "skill-tag" }, [text("SKILL 6")]));
+  s6Header.appendChild(scoreBadge("s6"));
+  p.appendChild(s6Header);
+  p.appendChild(el("h2", {}, [text("Challenge — working backwards to find r")]));
+  mcqBlock(p, "s6", SKILL_WARMUPS.s6, "s6");
+  p.appendChild(el("p", { class: "q-body", html: "Bivariate data on x and y gave: x̄ = 8.97, ȳ = 4.42, sx = 4.29, sy = 1.69, and the least squares line <i>y = 1.62 + 0.312x</i>. Find r." }));
+  const steps = el("div", { class: "scaffold-steps" });
+  ["Start from b = r · sy ÷ sx.", "Rearrange to make r the subject: r = b · sx ÷ sy.", "From the equation, b = 0.312. Substitute and solve."].forEach((s, i) => {
+    steps.appendChild(el("div", { class: "step" }, [el("b", {}, [text("Step " + (i + 1) + ": ")]), text(s)]));
+  });
+  p.appendChild(steps);
+  const row = el("div", { class: "ans-row" });
+  row.appendChild(numField("s6_r", "r =", 0.792, 0.02, "120px", "s6"));
+  p.appendChild(row);
+  container.appendChild(p);
+}
+
+function buildSkill7(container) {
+  const p = el("div", { class: "panel" });
+  const s7Header = el("div", { style: "display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;" });
+  s7Header.appendChild(el("div", { class: "skill-tag" }, [text("SKILL 7")]));
+  s7Header.appendChild(scoreBadge("s7"));
+  p.appendChild(s7Header);
+  p.appendChild(el("h2", {}, [text("Extension — when the association is curved")]));
+  mcqBlock(p, "s7", SKILL_WARMUPS.s7, "s7");
+  p.appendChild(el("p", { class: "q-body" }, [text("The table shows the diameter (cm) and area (cm²) of circles drawn on squared paper.")]));
+  p.appendChild(dataTableEl("diameter", S7_DATA.d, "area", S7_DATA.a));
+  p.appendChild(el("p", { class: "q-body" }, [text("a) Square each diameter value, then construct a scatterplot with diameter² as the EV and area as the RV.")]));
+  const row = el("div", { class: "ans-row" });
+  row.appendChild(numField("s7_a", "b)  a =", -0.484, 0.1, "120px", "s7"));
+  row.appendChild(numField("s7_b", "b =", 0.795, 0.05, "120px", "s7"));
+  p.appendChild(row);
+  p.appendChild(numField("s7_eq", "c)  area = ____ + ____ × diameter²", null, null, "100%", "s7"));
+  delete ANSWER_KEY["s7_eq"];
+  const refl = el("div", { class: "field" });
+  refl.appendChild(el("label", {}, [text("d) Compare your equation to the exact circle-area formula. What do you notice?")]));
+  const ta = el("input", { type: "text", id: "s7_reflection" });
+  refl.appendChild(ta);
+  p.appendChild(refl);
+
+  container.appendChild(p);
+}
+
+/* ======================= GRADING ======================= */
+function norm(s) { return (s || "").toString().trim().toLowerCase(); }
+
+function gradeAll() {
+  let correct = 0, total = 0;
+  const bySkill = {}; // skillId -> {correct, total}
+
+  function tally(skill, ok) {
+    if (!skill) return;
+    if (!bySkill[skill]) bySkill[skill] = { correct: 0, total: 0 };
+    bySkill[skill].total++;
+    if (ok) bySkill[skill].correct++;
+  }
+
+  Object.entries(ANSWER_KEY).forEach(([id, spec]) => {
+    total++;
+    let ok = false;
+    if (spec.type === "mcq") {
+      const chosen = document.querySelector(`input[name="${id}"]:checked`);
+      ok = chosen && parseInt(chosen.value) === spec.correct;
+      const fb = document.getElementById(id + "_fb");
+      if (fb) { fb.textContent = ok ? "✓ Correct" : "✗ Not quite"; fb.className = "fb " + (ok ? "correct" : "incorrect"); }
+    } else if (spec.type === "select") {
+      const v = (document.getElementById(id) || {}).value;
+      ok = v === spec.correct;
+      const fb = document.getElementById(id + "_fb");
+      if (fb) { fb.textContent = ok ? "✓ Correct" : "✗ Not quite"; fb.className = "fb-line " + (ok ? "correct" : "incorrect"); }
+    } else if (spec.type === "numeric") {
+      const raw = (document.getElementById(id) || {}).value;
+      const v = parseFloat(raw);
+      ok = !isNaN(v) && Math.abs(v - spec.correct) <= spec.tolerance;
+      const fb = document.getElementById(id + "_fb");
+      if (fb) { fb.textContent = ok ? "✓ Correct" : "✗ Check this value"; fb.className = "fb-line " + (ok ? "correct" : "incorrect"); }
+    }
+    if (ok) correct++;
+    tally(spec.skill, ok);
+  });
+
+  Object.entries(bySkill).forEach(([skillId, s]) => {
+    const badge = document.getElementById(skillId + "_scorebadge");
+    if (!badge) return;
+    badge.textContent = `${s.correct} / ${s.total} correct`;
+    badge.className = "section-score " + (s.correct === s.total ? "all-correct" : "some-wrong");
+  });
+
+  return { correct, total, bySkill };
+}
+
+/* ======================= COLLECT / FILL ======================= */
+function collectAnswers() {
+  const values = {};
+  document.querySelectorAll("input[type=text], input[type=radio]:checked, select").forEach((elm) => {
+    if (elm.type === "radio") values[elm.name] = elm.value;
+    else if (elm.id) values[elm.id] = elm.value;
+  });
+  const clicks = {};
+  Object.keys(LINE_CLICKS).forEach((k) => { clicks[k] = LINE_CLICKS[k]; });
+  return { values, clicks };
+}
+
+function fillForm(saved) {
+  if (!saved) return;
+  const values = saved.values || {};
+  Object.entries(values).forEach(([id, val]) => {
+    const radio = document.querySelector(`input[type=radio][name="${id}"][value="${val}"]`);
+    if (radio) { radio.checked = true; return; }
+    const elm = document.getElementById(id);
+    if (elm) elm.value = val;
+  });
+  if (saved.clicks) {
+    Object.entries(saved.clicks).forEach(([gid, pts]) => { LINE_CLICKS[gid] = pts; });
+    LINE_GRAPHS.forEach((cfg) => { if (document.getElementById(cfg.id + "_canvas")) drawLineGraph(cfg); });
+  }
+}
+
+/* ======================= STORAGE BACKEND (Google Apps Script) =======================
+   This tool is designed to be hosted as a static page (e.g. on GitHub Pages), which has
+   no built-in server. To save and load student submissions, it calls a small Google Apps
+   Script "Web App" that reads/writes a Google Sheet.
+
+   SETUP (one-time, for the teacher):
+   1. Go to script.google.com -> New project. Paste in the contents of the accompanying
+      "7D_Interactive_Backend.gs.txt" file.
+   2. Deploy -> New deployment -> type "Web app". Execute as "Me", access "Anyone".
+   3. Copy the deployment URL and paste it below as APPS_SCRIPT_URL.
+   4. Re-upload/replace this HTML file with the URL filled in.
+   Until APPS_SCRIPT_URL is set, Save/Load/Dashboard will show a clear setup message
+   instead of failing silently.
+*/
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzv0kmdeSEWFpCSnMI3f8L4Kg4U7kV6T5qmNV-mWaSI9hPyr80LrPkMg1hcyuDo_IHI/exec";
+
+function backendConfigured() {
+  return APPS_SCRIPT_URL && APPS_SCRIPT_URL.indexOf("https://") === 0;
+}
+
+async function gasCall(payload) {
+  if (!backendConfigured()) {
+    throw new Error("NOT_CONFIGURED");
+  }
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" }, // avoids a CORS preflight
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
+function slug(s) { return (s || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); }
+function storageKey(name, cls) { return `sk7d_${slug(cls)}__${slug(name)}`; }
+
+async function saveSubmission(isFinal) {
+  const name = document.getElementById("stuName").value.trim();
+  const cls = document.getElementById("stuClass").value.trim();
+  if (!name || !cls) { document.getElementById("submitStatus").textContent = "Please enter your name and class before saving."; return; }
+  if (!backendConfigured()) { document.getElementById("submitStatus").textContent = "Setup needed: ask your teacher to add the Apps Script URL to this page (see comment at the top of the script)."; return; }
+  const grades = gradeAll();
+  const answers = collectAnswers();
+  const record = { name, class: cls, timestamp: new Date().toISOString(), submitted: !!isFinal, grades, answers };
+  try {
+    await gasCall({ type: "save", key: storageKey(name, cls), value: JSON.stringify(record) });
+    document.getElementById("submitStatus").textContent = (isFinal ? "Submitted" : "Draft saved") + ` — ${grades.correct}/${grades.total} auto-graded correct. (${new Date().toLocaleTimeString()})`;
+  } catch (err) {
+    document.getElementById("submitStatus").textContent = "Could not save — please check your internet connection and try again.";
+  }
+}
+
+async function loadSubmission() {
+  const name = document.getElementById("stuName").value.trim();
+  const cls = document.getElementById("stuClass").value.trim();
+  if (!name || !cls) { document.getElementById("submitStatus").textContent = "Enter your name and class first."; return; }
+  if (!backendConfigured()) { document.getElementById("submitStatus").textContent = "Setup needed: ask your teacher to add the Apps Script URL to this page (see comment at the top of the script)."; return; }
+  try {
+    const res = await gasCall({ type: "get", key: storageKey(name, cls) });
+    if (res && res.value) {
+      const record = JSON.parse(res.value);
+      fillForm(record.answers);
+      document.getElementById("submitStatus").textContent = "Loaded your saved answers from " + new Date(record.timestamp).toLocaleString();
+    } else {
+      document.getElementById("submitStatus").textContent = "No saved answers found for that name/class yet.";
+    }
+  } catch (err) {
+    document.getElementById("submitStatus").textContent = "No saved answers found for that name/class yet.";
+  }
+}
+
+/* ======================= TEACHER DASHBOARD ======================= */
+let allSubmissions = [];
+async function loadAllSubmissions() {
+  const wrap = document.getElementById("dashTableWrap");
+  if (!backendConfigured()) {
+    wrap.innerHTML = '<div class="empty-state">Setup needed: paste your Apps Script Web App URL into APPS_SCRIPT_URL near the top of the JavaScript (see the accompanying 7D_Interactive_Backend.gs.txt file and its setup notes).</div>';
+    return;
+  }
+  wrap.innerHTML = '<div class="empty-state">Loading…</div>';
+  try {
+    const res = await gasCall({ type: "listValues", prefix: "sk7d_" });
+    const records = [];
+    (res.items || []).forEach((item) => {
+      try { if (item.value) records.push(JSON.parse(item.value)); } catch (e) {}
+    });
+    allSubmissions = records.sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""));
+    populateClassFilter();
+    renderDashTable();
+  } catch (err) {
+    wrap.innerHTML = '<div class="empty-state">Could not load submissions.</div>';
+  }
+}
+function populateClassFilter() {
+  const sel = document.getElementById("filterClass");
+  const classes = Array.from(new Set(allSubmissions.map((r) => r.class))).sort();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All classes</option>' + classes.map((c) => `<option>${c}</option>`).join("");
+  sel.value = current;
+}
+function renderDashTable() {
+  const wrap = document.getElementById("dashTableWrap");
+  const clsFilter = document.getElementById("filterClass").value;
+  const nameFilter = norm(document.getElementById("filterName").value);
+  const rows = allSubmissions.filter((r) => (!clsFilter || r.class === clsFilter) && (!nameFilter || norm(r.name).includes(nameFilter)));
+  if (rows.length === 0) { wrap.innerHTML = '<div class="empty-state">No submissions yet.</div>'; return; }
+  let html = `<table class="dash"><thead><tr><th>Name</th><th>Class</th><th>Status</th><th>Score</th><th>Last saved</th><th></th></tr></thead><tbody>`;
+  rows.forEach((r) => {
+    const g = r.grades || { correct: 0, total: 0 };
+    html += `<tr><td>${r.name}</td><td>${r.class}</td><td>${r.submitted ? "Submitted" : "Draft"}</td><td><span class="score-pill">${g.correct}/${g.total}</span></td><td>${r.timestamp ? new Date(r.timestamp).toLocaleString() : ""}</td><td><button class="view-btn" data-idx="${allSubmissions.indexOf(r)}">View</button></td></tr>`;
+  });
+  html += "</tbody></table>";
+  wrap.innerHTML = html;
+  wrap.querySelectorAll(".view-btn").forEach((btn) => btn.addEventListener("click", () => openModal(allSubmissions[parseInt(btn.getAttribute("data-idx"))])));
+}
+function openModal(record) {
+  const c = document.getElementById("modalContent");
+  const v = (record.answers || {}).values || {};
+  let html = `<h3>${record.name} — ${record.class}</h3><div class="modal-section"><div class="row"><b>Status:</b> ${record.submitted ? "Submitted" : "Draft"} · <b>Score:</b> ${record.grades.correct}/${record.grades.total} · <b>Last saved:</b> ${new Date(record.timestamp).toLocaleString()}</div></div>`;
+  html += `<div class="modal-section"><h4>All recorded answers</h4>`;
+  Object.entries(v).forEach(([k, val]) => { if (val !== "" && val !== undefined) html += `<div class="row"><b>${k}:</b> ${val}</div>`; });
+  html += `</div>`;
+  const clicks = (record.answers || {}).clicks || {};
+  html += `<div class="modal-section"><h4>Skill 2 — points chosen on each line</h4>`;
+  Object.entries(clicks).forEach(([gid, pts]) => { if (pts && pts.length) html += `<div class="row"><b>${gid}:</b> ${pts.map(p => `(${p.x}, ${p.y})`).join(", ")}</div>`; });
+  html += `</div>`;
+  c.innerHTML = html;
+  document.getElementById("modalBg").classList.add("active");
+}
+function exportCSV() {
+  const header = ["Name", "Class", "Status", "Score", "Max", "Last saved"];
+  const rows = allSubmissions.map((r) => [r.name, r.class, r.submitted ? "Submitted" : "Draft", r.grades.correct, r.grades.total, r.timestamp ? new Date(r.timestamp).toLocaleString() : ""]);
+  const csv = [header, ...rows].map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "7D_submissions.csv"; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ======================= TABS / INIT ======================= */
+function initTabs() {
+  const studentBtn = document.getElementById("tabStudentBtn");
+  const teacherBtn = document.getElementById("tabTeacherBtn");
+  studentBtn.addEventListener("click", () => {
+    studentBtn.classList.add("active"); teacherBtn.classList.remove("active");
+    document.getElementById("studentView").classList.add("active");
+    document.getElementById("teacherView").classList.remove("active");
+    document.getElementById("submitBar").style.display = "flex";
+  });
+  teacherBtn.addEventListener("click", () => {
+    teacherBtn.classList.add("active"); studentBtn.classList.remove("active");
+    document.getElementById("teacherView").classList.add("active");
+    document.getElementById("studentView").classList.remove("active");
+    document.getElementById("submitBar").style.display = "none";
+    loadAllSubmissions();
+  });
+}
+
+function init() {
+  mcqBlock(document.getElementById("generalWarmup"), "gw", GENERAL_WARMUP, "gw");
+
+  const container = document.getElementById("skillsContainer");
+  buildSkill1(container);
+  buildSkill2(container);
+  buildSkill3(container);
+  buildSkill4(container);
+  buildSkill5(container);
+  buildSkill6(container);
+  buildSkill7(container);
+
+  LINE_GRAPHS.forEach((cfg) => setupLineGraph(cfg));
+
+  initTabs();
+  document.getElementById("loadBtn").addEventListener("click", loadSubmission);
+  document.getElementById("checkBtn").addEventListener("click", () => {
+    const grades = gradeAll();
+    document.getElementById("submitStatus").textContent = `Checked — ${grades.correct}/${grades.total} correct so far. Scroll up to see feedback on each section.`;
+  });
+  document.getElementById("saveDraftBtn").addEventListener("click", () => saveSubmission(false));
+  document.getElementById("submitBtn").addEventListener("click", () => saveSubmission(true));
+  document.getElementById("refreshBtn").addEventListener("click", loadAllSubmissions);
+  document.getElementById("exportBtn").addEventListener("click", exportCSV);
+  document.getElementById("filterClass").addEventListener("change", renderDashTable);
+  document.getElementById("filterName").addEventListener("input", renderDashTable);
+  document.getElementById("modalClose").addEventListener("click", () => document.getElementById("modalBg").classList.remove("active"));
+  document.getElementById("modalBg").addEventListener("click", (e) => { if (e.target.id === "modalBg") document.getElementById("modalBg").classList.remove("active"); });
+}
+
+init();
+
+</script>
+</body>
+</html>
